@@ -1,6 +1,8 @@
 # cache
 .cache
 .modcache
+.gopath
+.gocache
 # Default binary name
 main
 # All bins if present

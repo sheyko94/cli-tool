@@ -1,11 +1,9 @@
 go 1.25.2
 
 use (
-	.
-	./commands
-	./internal/flag
-	./internal/registry
-	./internal/systems/aws
-	./internal/systems/github
-	./internal/systems/system
+    .
+    ./commands
+    ./systems/aws
+    ./systems/github
+    ./systems/system
 )

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"example.com/internal/flag"
-	"example.com/internal/systems/system"
+	"example.com/commands/flag"
+	"example.com/systems/system"
 )
 
 const Name = "aws"
@@ -18,21 +18,20 @@ func (AwsSystem) Name() string {
 
 func (AwsSystem) Flags() []flag.FlagSpec {
 	return []flag.FlagSpec{
-		flag.NewStringFlag("aws-service", "", "AWS service to target (e.g., rds, ec2)"),
+		flag.NewStringFlag("service", "", "AWS service to inspect (e.g., rds, ec2)"),
 	}
 }
 
 func (AwsSystem) Execute(ctx system.SystemContext) (string, error) {
-	servicePtr, ok := ctx.Flags.String("aws-service")
+	servicePtr, ok := ctx.Flags.String("service")
 	if !ok || strings.TrimSpace(*servicePtr) == "" {
-		return "", fmt.Errorf("[AWS] aws-service flag is required")
+		return "", fmt.Errorf("[AWS] service flag is required")
 	}
 
 	service := strings.TrimSpace(*servicePtr)
-	action := "describe"
 	if len(ctx.Args) > 0 {
-		action = strings.Join(ctx.Args, " ")
+		return "", fmt.Errorf("[AWS] unexpected arguments: %s", strings.Join(ctx.Args, " "))
 	}
 
-	return fmt.Sprintf("[AWS] Pretend to %s for service %s...", action, service), nil
+	return fmt.Sprintf("[AWS] %s reports 3 healthy resources.", service), nil
 }

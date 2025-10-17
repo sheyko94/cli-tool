@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"example.com/internal/flag"
+	"example.com/commands/flag"
 )
 
 // Context carries runtime information provided to each command execution.
@@ -27,6 +27,7 @@ type Handler func(Context) error
 type Command struct {
 	Name        string
 	Description string
+	Flags       []flag.FlagSpec
 	Handler     Handler
 }
 
@@ -46,6 +47,7 @@ func Register(cmd Command) {
 	}
 
 	name := strings.ToLower(cmd.Name)
+	cmd = cloneCommand(cmd)
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -63,7 +65,10 @@ func Lookup(name string) (Command, bool) {
 	mu.RLock()
 	defer mu.RUnlock()
 	cmd, ok := reg[strings.ToLower(name)]
-	return cmd, ok
+	if !ok {
+		return Command{}, false
+	}
+	return cloneCommand(cmd), true
 }
 
 // All returns a snapshot of all registered commands, sorted by name.
@@ -74,8 +79,18 @@ func All() []Command {
 	for _, name := range order {
 		cmd, ok := reg[strings.ToLower(name)]
 		if ok {
-			out = append(out, cmd)
+			out = append(out, cloneCommand(cmd))
 		}
 	}
 	return out
+}
+
+func cloneCommand(cmd Command) Command {
+	if len(cmd.Flags) == 0 {
+		return cmd
+	}
+	flags := make([]flag.FlagSpec, len(cmd.Flags))
+	copy(flags, cmd.Flags)
+	cmd.Flags = flags
+	return cmd
 }

@@ -1,6 +1,6 @@
 package system
 
-import "example.com/internal/flag"
+import "example.com/commands/flag"
 
 // SystemContext represents the runtime context passed to a system execution.
 type SystemContext struct {
