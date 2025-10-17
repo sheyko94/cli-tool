@@ -1,0 +1,98 @@
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"os"
+	"strings"
+
+	"example.com/commands"
+	"example.com/internal/registry"
+)
+
+var version = "0.1.0"
+
+func main() {
+	boundFlags := registry.BindFlags(flag.CommandLine)
+
+	fmt.Printf("flags received:\n")
+	for name, value := range boundFlags.StringFlags {
+		fmt.Printf("  %s: %v\n", name, *value)
+	}
+
+	return
+
+	configureUsage()
+
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) > 0 {
+		cmdName := args[0]
+		if cmd, ok := commands.Lookup(cmdName); ok {
+			ctx := commands.Context{
+				Args:    args[1:],
+				Flags:   boundFlags,
+				Usage:   flag.Usage,
+				Stdout:  os.Stdout,
+				Stderr:  os.Stderr,
+				Version: version,
+			}
+			if err := cmd.Handler(ctx); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			return
+		}
+
+		result, err := registry.Execute(cmdName, registry.SystemContext{
+			Flags: boundFlags,
+			Args:  args[1:],
+		})
+		if err == nil {
+			fmt.Println(result)
+			return
+		}
+		if errors.Is(err, registry.ErrSystemNotFound) {
+			fmt.Fprintf(os.Stderr, "unknown command or system %q\n", cmdName)
+			os.Exit(1)
+		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	name := "world"
+	if boundName, ok := boundFlags.String("name"); ok && strings.TrimSpace(*boundName) != "" {
+		name = *boundName
+	}
+
+	msg := fmt.Sprintf("Hello, %s!", name)
+	if boundShout, ok := boundFlags.Bool("shout"); ok && *boundShout {
+		msg = strings.ToUpper(msg)
+	}
+	fmt.Println(msg)
+}
+
+func configureUsage() {
+	flag.Usage = func() {
+		fmt.Println("cli-tool")
+		fmt.Println("\nUsage:")
+		fmt.Println("  hello [flags] [command]")
+		fmt.Println("\nFlags:")
+		flag.PrintDefaults()
+		fmt.Println("\nCommands:")
+		for _, cmd := range commands.All() {
+			fmt.Printf("  %-10s %s\n", cmd.Name, cmd.Description)
+		}
+		fmt.Println("\nSystems:")
+		for _, name := range registry.SystemNames() {
+			fmt.Printf("  %-10s\n", name)
+		}
+		fmt.Println("\nExamples:")
+		fmt.Println("  hello")
+		fmt.Println("  hello -name Ivan")
+		fmt.Println("  hello aws --aws-service rds instances")
+		fmt.Println("  hello github --github-repo user/project summary")
+	}
+}

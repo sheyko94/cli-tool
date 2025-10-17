@@ -1,0 +1,7 @@
+# cache
+.cache
+.modcache
+# Default binary name
+main
+# All bins if present
+*.bin
